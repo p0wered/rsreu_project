@@ -31,17 +31,17 @@ player_dx = 0
 player_x = screen_width / 2 - player_width / 2
 player_y = screen_height - player_height - player_gap
 
-bullet_img = pg.image.load('src/bullet.png')
+bullet_img = pg.image.load('src/projectile.png')
 bullet_width, bullet_height = bullet_img.get_size()
-bullet_dy = -5
-bullet_x = 0  # микро дз - пускать из середины
+bullet_dy = -10
+bullet_x = 0
 bullet_y = 0
 bullet_alive = False
 
 enemy_img = pg.image.load('src/enemy.png')
 enemy_width, enemy_height = enemy_img.get_size()
 enemy_dx = 0
-enemy_dy = 1
+enemy_dy = 2
 enemy_x = 0
 enemy_y = 0
 
@@ -55,13 +55,12 @@ def enemy_create():
 
 
 def model_update():
-    palayer_model()
+    player_model()
     bullet_model()
     enemy_model()
 
 
-def palayer_model():
-    x = 7
+def player_model():
     x = 7
     global player_x
     player_x += player_dx
@@ -82,27 +81,28 @@ def bullet_model():
 def bullet_create():
     global bullet_y, bullet_x, bullet_alive
     bullet_alive = True
-    bullet_x = player_x  # микро дз - пускать из середины
+    bullet_x = player_x + bullet_width / 2
     bullet_y = player_y - bullet_height
 
 
 def enemy_model():
-    """ Изменение положения противника, рассчет поражений."""
     global enemy_y, enemy_x, bullet_alive
-
     enemy_x += enemy_dx
     enemy_y += enemy_dy
+    re = pg.Rect(enemy_x, enemy_y, enemy_width, enemy_height)
+    rb = pg.Rect(bullet_x, bullet_y, bullet_width, bullet_height)
+    rp = pg.Rect(player_x, player_y, player_width, player_height)
+    is_touched = re.colliderect(rp)
     if enemy_y > screen_height:
         enemy_create()
     if bullet_alive:
-        re = pg.Rect(enemy_x, enemy_y, enemy_width, enemy_height)
-        rb = pg.Rect(bullet_x, bullet_y, bullet_width, bullet_height)
         is_crossed = re.colliderect(rb)
-        # попал!
         if is_crossed:
             print('BANG!')
             enemy_create()
             bullet_alive = False
+    if is_touched:
+        return False
 
 
 def display_redraw():
@@ -132,13 +132,14 @@ def event_processing():
             player_dx = 0
 
         if event.type == pg.MOUSEBUTTONDOWN:
-            key = pg.mouse.get_pressed()  # key[0] - left, key[2] - right
+            key = pg.mouse.get_pressed()
             print(f'{key[0]=} {bullet_alive=}')
             if not bullet_alive:
                 bullet_create()
 
     clock.tick(FPS)
     return running
+
 
 enemy_create()
 running = True
