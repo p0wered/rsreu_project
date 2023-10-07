@@ -23,6 +23,7 @@ game_over_text = font.render('Game Over', True, 'red')
 w, h = game_over_text.get_size()
 align_center = screen_width / 2 - w / 2, screen_height / 2 - h / 2
 game_over = False
+score = 0
 
 player_img = pg.image.load('src/player.png')
 player_width, player_height = player_img.get_size()
@@ -31,6 +32,8 @@ player_velocity = 10
 player_dx = 0
 player_x = screen_width / 2 - player_width / 2
 player_y = screen_height - player_height - player_gap
+player_hp = 3
+hp_img = pg.image.load('src/heart.png')
 
 bullet_img = pg.image.load('src/projectile.png')
 bullet_width, bullet_height = bullet_img.get_size()
@@ -41,6 +44,7 @@ bullet_alive = False
 
 enemy_img = pg.image.load('src/enemy.png')
 enemy_width, enemy_height = enemy_img.get_size()
+enemy_alive = True
 enemy_dx = 0
 enemy_dy = 2
 enemy_x = 0
@@ -48,10 +52,10 @@ enemy_y = 0
 
 
 def enemy_create():
-    global enemy_y, enemy_x
+    global enemy_y, enemy_x, enemy_alive
     enemy_x = random.randint(0, screen_width - enemy_width)
     enemy_y = 0
-    print(f'CREATE: {enemy_x=}')
+    enemy_alive = True
 
 
 def model_update():
@@ -84,7 +88,7 @@ def bullet_create():
 
 
 def enemy_model():
-    global enemy_y, enemy_x, bullet_alive, enemy_alive, game_over
+    global enemy_y, enemy_x, bullet_alive, enemy_alive, game_over, player_hp, score
     enemy_x += enemy_dx
     enemy_y += enemy_dy
     if not game_over:
@@ -92,25 +96,37 @@ def enemy_model():
         rb = pg.Rect(bullet_x, bullet_y, bullet_width, bullet_height)
         rp = pg.Rect(player_x, player_y, player_width, player_height)
         is_touched = rp.colliderect(re)
+        is_crossed = re.colliderect(rb)
         if enemy_y > screen_height:
             enemy_create()
+        if not enemy_alive:
+            enemy_create()
         if bullet_alive:
-            is_crossed = re.colliderect(rb)
             if is_crossed:
-                print('BANG!')
+                score += 1
                 enemy_create()
                 bullet_alive = False
         if is_touched:
-            game_over = True
+            enemy_alive = False
+            if player_hp > 0:
+                player_hp -= 1
+            else:
+                game_over = True
 
 
 def display_redraw():
     if not game_over:
         display.blit(bg_img, (0, 0))
         display.blit(player_img, (player_x, player_y))
-        display.blit(enemy_img, (enemy_x, enemy_y))
+        score_text = sys_font.render(f'Score: {score}', True, 'white')
+        display.blit(score_text, (screen_width - 130, 10))
+        if enemy_alive:
+            display.blit(enemy_img, (enemy_x, enemy_y))
         if bullet_alive:
             display.blit(bullet_img, (bullet_x, bullet_y))
+        for n in range(player_hp):
+            display.blit(hp_img, (n * 40, 10))
+
     else:
         display.blit(game_over_text, align_center)
     pg.display.update()
@@ -132,10 +148,8 @@ def event_processing():
                 player_dx = player_velocity
         if event.type == pg.KEYUP:
             player_dx = 0
-
         if event.type == pg.MOUSEBUTTONDOWN:
             key = pg.mouse.get_pressed()
-            print(f'{key[0]=} {bullet_alive=}')
             if not bullet_alive:
                 bullet_create()
 
