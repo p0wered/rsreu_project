@@ -19,9 +19,10 @@ sys_font = pg.font.SysFont('arial', 34)
 font = pg.font.Font('src/04B_19.TTF', 48)
 display.blit(bg_img, (0, 0))
 
-text_img = sys_font.render('Score 123', True, 'white')
 game_over_text = font.render('Game Over', True, 'red')
 w, h = game_over_text.get_size()
+align_center = screen_width / 2 - w / 2, screen_height / 2 - h / 2
+game_over = False
 
 player_img = pg.image.load('src/player.png')
 player_width, player_height = player_img.get_size()
@@ -47,7 +48,6 @@ enemy_y = 0
 
 
 def enemy_create():
-    """ Создаем противника в случайном месте вверху окна."""
     global enemy_y, enemy_x
     enemy_x = random.randint(0, screen_width - enemy_width)
     enemy_y = 0
@@ -61,8 +61,7 @@ def model_update():
 
 
 def player_model():
-    x = 7
-    global player_x
+    global player_x, game_over
     player_x += player_dx
     if player_x < 0:
         player_x = 0
@@ -71,7 +70,6 @@ def player_model():
 
 
 def bullet_model():
-    """ Изменяется положение пули."""
     global bullet_y, bullet_alive
     bullet_y += bullet_dy
     if bullet_y < 0:
@@ -86,36 +84,40 @@ def bullet_create():
 
 
 def enemy_model():
-    global enemy_y, enemy_x, bullet_alive
+    global enemy_y, enemy_x, bullet_alive, enemy_alive, game_over
     enemy_x += enemy_dx
     enemy_y += enemy_dy
-    re = pg.Rect(enemy_x, enemy_y, enemy_width, enemy_height)
-    rb = pg.Rect(bullet_x, bullet_y, bullet_width, bullet_height)
-    rp = pg.Rect(player_x, player_y, player_width, player_height)
-    is_touched = re.colliderect(rp)
-    if enemy_y > screen_height:
-        enemy_create()
-    if bullet_alive:
-        is_crossed = re.colliderect(rb)
-        if is_crossed:
-            print('BANG!')
+    if not game_over:
+        re = pg.Rect(enemy_x, enemy_y, enemy_width, enemy_height)
+        rb = pg.Rect(bullet_x, bullet_y, bullet_width, bullet_height)
+        rp = pg.Rect(player_x, player_y, player_width, player_height)
+        is_touched = rp.colliderect(re)
+        if enemy_y > screen_height:
             enemy_create()
-            bullet_alive = False
-    if is_touched:
-        return False
+        if bullet_alive:
+            is_crossed = re.colliderect(rb)
+            if is_crossed:
+                print('BANG!')
+                enemy_create()
+                bullet_alive = False
+        if is_touched:
+            game_over = True
 
 
 def display_redraw():
-    display.blit(bg_img, (0, 0))
-    display.blit(player_img, (player_x, player_y))
-    display.blit(enemy_img, (enemy_x, enemy_y))
-    if bullet_alive:
-        display.blit(bullet_img, (bullet_x, bullet_y))
+    if not game_over:
+        display.blit(bg_img, (0, 0))
+        display.blit(player_img, (player_x, player_y))
+        display.blit(enemy_img, (enemy_x, enemy_y))
+        if bullet_alive:
+            display.blit(bullet_img, (bullet_x, bullet_y))
+    else:
+        display.blit(game_over_text, align_center)
     pg.display.update()
 
 
 def event_processing():
-    global player_dx
+    global player_dx, game_over
     running = True
     for event in pg.event.get():
         if event.type == pg.QUIT:
