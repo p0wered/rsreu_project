@@ -24,3 +24,7 @@ class Deck:
         """ Взяли из колоды 1 карту и вернули ее."""
         card = self.cards.pop()
         return card
+
+
+r = Deck
+print(r)
